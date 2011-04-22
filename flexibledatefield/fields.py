@@ -296,6 +296,16 @@ class FlexibleDateField(models.PositiveIntegerField):
             raise ValidationError(self.error_messages['bad_date'])
         return value
 
+    def get_db_prep_lookup(self, lookup_type, value, connection, prepared=False):
+        if not prepared:
+            value = self.get_prep_lookup(lookup_type, value)
+        if lookup_type == 'year':
+            return (int("%d0000" % value), int("%d1231" % value))
+        else:
+            return super(FlexibleDateField, self).get_db_prep_lookup(lookup_type, value, connection, prepared)
+        
+
+
     def contribute_to_class(self, cls, name):
         super(FlexibleDateField, self).contribute_to_class(cls, name)
         setattr(cls, self.name, self.descriptor_class(self))
