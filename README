@@ -1,0 +1,15 @@
+django-flexibledate is designed to allow you to enter dates which are not (necessarily) exact.
+
+For example, you can enter a date of 2011, or April 2011. You can also enter a date of April 22, 2011. 
+An example usage might be storing the published dates for various publications where no exact date is given.
+
+To use it, simply add "flexibledate" as a django app. Then, you can incorporate it in a model like so:
+
+    from django.db import models
+    from flexibledate.fields import FlexibleDateField
+
+    class Publication(models.Model):
+        date_published = FlexibleDateField()
+        
+Flexible date field automatically uses its own widget which allows you to enter the year 
+along with (optionally) the month and day.
