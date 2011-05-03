@@ -165,6 +165,13 @@ class FlexibleDateField(models.PositiveIntegerField):
             return flexibledate(value)
         except ValueError, inst:
             raise ValidationError(inst)
+        
+    def get_prep_value(self, value):
+        try:
+            value = value.value
+        except:
+            pass
+        return value
 
     def get_db_prep_lookup(self, lookup_type, value, connection, prepared=False):
         if isinstance(value, flexibledate):
