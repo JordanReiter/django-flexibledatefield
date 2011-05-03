@@ -1,6 +1,3 @@
-"""
-    widgets.py
-"""
 import datetime
 import re
 
@@ -13,98 +10,9 @@ from django.utils.dates import MONTHS
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 
-MIN_VALUE = 18000000
-MAX_VALUE = 21000000
-RE_DATE = re.compile(r'(\d{4})(\d\d)(\d\d)$')
+from flexibledate import flexibledate
 
-def flexibledatecompare(f, o):
-    try:
-        fd = datetime.datetime.strftime(f, '%Y%m%d')
-    except TypeError:
-        fd = f
-    try:
-        od = datetime.datetime.strftime(o, '%Y%m%d')
-    except TypeError:
-        od = o
-    fmatch = RE_DATE.match(str(fd))
-    omatch = RE_DATE.match(str(od))
-    if not fmatch or not omatch:
-        raise TypeError("Invalid format for one of the dates.")
-    if fmatch:
-        fyear, fmonth, fday = [int(v) for v in fmatch.groups()]
-    if omatch:
-        oyear, omonth, oday = [int(v) for v in omatch.groups()]
-    if fyear != oyear:
-        return fyear-oyear
-    if fmonth == omonth:
-        if fday and oday:
-            return fday-oday
-        return 0
-    else:
-        if fmonth and omonth:
-            return fmonth-omonth
-        else:
-            return 0
-
-def flexibledatelt(fd,d):
-    return flexibledatecompare(fd,d) < 0
-
-def flexibledategt(fd,d):
-    return flexibledatecompare(fd,d) > 0
-
-def flexibledateeq(fd,d):
-    return flexibledatecompare(fd,d) == 0
-        
-
-def flexibledatespan(start, end):
-    if not end or start == end:
-        return start.display
-    smatch = RE_DATE.match(str(start))
-    ematch = RE_DATE.match(str(end))
-    if smatch:
-        syear, smonth, sday = [int(v) for v in smatch.groups()]
-    if ematch:
-        eyear, emonth, eday = [int(v) for v in ematch.groups()]
-    sdate = datetime.date(syear,smonth or 1,sday or 1)
-    edate = datetime.date(eyear,emonth or 1,eday or 1)
-    if eday and smonth == emonth:
-        return "%s-%s" % (
-            datetime.datetime.strftime(sdate,'%b %e'),
-            datetime.datetime.strftime(edate,'%e, %Y').strip(),
-        )
-    if eday and smonth != emonth:
-        return "%s-%s" % (
-            datetime.datetime.strftime(sdate,'%b %e'),
-            datetime.datetime.strftime(edate,'%b %e, %Y'),
-        )
-    elif eday:
-        return "%s-%s" % (
-            datetime.datetime.strftime(sdate,'%b %e, %Y'),
-            datetime.datetime.strftime(edate,'%b %e, %Y'),
-        )
-    else:
-        return "%s-%s" % (
-            datetime.datetime.strftime(sdate,'%b %Y'),
-            datetime.datetime.strftime(edate,'%b %Y'),
-        )
-
-def flexibledateformat(value):
-    try:
-        value = str(int(value))
-    except:
-        return None
-    try:
-        match = RE_DATE.match(str(value))
-        if match:
-            year_val, month_val, day_val = [int(v) for v in match.groups()]
-        if day_val:
-            return datetime.datetime.strftime(datetime.date(year_val,month_val,day_val),'%b %e, %Y')
-        elif month_val:
-            return datetime.datetime.strftime(datetime.date(year_val,month_val,1),'%B %Y')
-        else:
-            return str(year_val)
-    except:
-        return None
+from django import forms
 
 class FlexibleDateWidget(forms.Widget):
     """
@@ -129,20 +37,7 @@ class FlexibleDateWidget(forms.Widget):
             self.years = range(this_year-10, this_year+11)
 
     def render(self, name, value, attrs=None):
-        try:
-            year_val, month_val, day_val = value.year, value.month, value.day
-        except AttributeError:
-            year_val = month_val = day_val = None
-            try:
-                value = int(value)
-                try:
-                    match = RE_DATE.match(str(value))
-                    if match:
-                        year_val, month_val, day_val = [int(v) for v in match.groups()]
-                except TypeError, inst:
-                    raise Exception("%s" % inst)
-            except: 
-                pass
+        year_val, month_val, day_val = value.get_year(), value.get_month(empty_allowed=True), value.get_day(empty_allowed=True)
 
         output = []
 
@@ -202,7 +97,8 @@ class FlexibleDateWidget(forms.Widget):
         if y:
             return '%04d%02d%02d' % (y, m or 0, d or 0)
         return data.get(name, None)
-        
+
+
 
 class FlexibleDateFormField(forms.Field):
     def __init__(self,*args,**kwargs):
@@ -210,10 +106,11 @@ class FlexibleDateFormField(forms.Field):
         defaults.update(kwargs)
         min_value = defaults.pop('min_value',None)
         max_value = defaults.pop('max_value',None)
-        years = defaults.pop('years',None)
         defaults['widget']=FlexibleDateWidget(years=years, required=kwargs.get('required',True))
         # these kwargs cause problems for the generic field type
         super(FlexibleDateFormField, self).__init__(*args, **defaults)
+
+
 
 class FlexibleDateDescriptor(object):
     """
@@ -249,17 +146,8 @@ class FlexibleDateDescriptor(object):
             instance.__dict__[self.field.name] = None
 
 
+
 class FlexibleDateField(models.PositiveIntegerField):
-
-    descriptor_class = FlexibleDateDescriptor
-
-    default_error_messages = {
-        'invalid': _(u'Something else'),
-        'bad_year': _(u'Enter a valid year (between %(min)s-%(max)s).' % {'min':str(MIN_VALUE)[:4],'max':str(MAX_VALUE)[:4]}),
-        'day_no_month': _(u'You entered a day but not a month.'),
-        'month_no_year': _(u'You entered a month but no year.'),
-        'bad_date': _(u'You entered an invalid date.'),
-    }
 
     def get_internal_type(self):
         return 'IntegerField'
@@ -270,45 +158,23 @@ class FlexibleDateField(models.PositiveIntegerField):
 
     def to_python(self, value):
         """
-        Validates that the input can be converted to a date. Returns a Python
-        datetime.date object.
+        Validates that the input can be converted to a date. 
+        Returns a flexibledate object.
         """
-        if value in validators.EMPTY_VALUES:
-            return None
         try:
-            value = int(value)
-        except ValueError:
-            raise ValidationError(self.error_messages['invalid'])
-        match = RE_DATE.match(str(value))
-        if match:
-            year_val, month_val, day_val = [int(v) for v in match.groups()]
-        if day_val and not month_val:
-            raise ValidationError(self.error_messages['day_no_month'])
-        if month_val and not year_val:
-            raise ValidationError(self.error_messages['month_no_year'])
-        if value < MIN_VALUE or value > MAX_VALUE:
-            raise ValidationError(self.error_messages['bad_year'])
-        test_day = day_val or 1
-        test_month = month_val or 1
-        try:
-            d = datetime.datetime(year_val,month_val or test_month,day_val or test_day)
-        except ValueError:
-            raise ValidationError(self.error_messages['bad_date'])
-        return value
+            return flexibledate(value)
+        except ValueError, inst:
+            raise ValidationError(inst)
 
     def get_db_prep_lookup(self, lookup_type, value, connection, prepared=False):
+        if isinstance(value, flexibledate):
+            value = value.value
         if not prepared:
             value = self.get_prep_lookup(lookup_type, value)
         if lookup_type == 'year':
             return (int("%d0000" % value), int("%d1231" % value))
         else:
             return super(FlexibleDateField, self).get_db_prep_lookup(lookup_type, value, connection, prepared)
-        
-
-
-    def contribute_to_class(self, cls, name):
-        super(FlexibleDateField, self).contribute_to_class(cls, name)
-        setattr(cls, self.name, self.descriptor_class(self))
 
     def formfield(self, *args, **kwargs):
         defaults={'form_class': FlexibleDateFormField}
