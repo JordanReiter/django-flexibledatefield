@@ -11,7 +11,6 @@ class flexibledate(object):
             self.value = value.strftime('%Y%m%d')
         except AttributeError:
             self.value = int(value)
-        print self.value
         if self.value < _MIN_VALUE or self.value > _MAX_VALUE:
             raise ValueError("Flexible dates must be between the years %d and %d" % ( _MIN_VALUE/10000, _MAX_VALUE/10000 ))
         if int(str(self.value)[4:6]) > 12:
