@@ -69,8 +69,9 @@ class flexibledate(object):
 
     def __add__(self, other):
         if isinstance(other, flexibledatedelta):
+            new_fd = flexibledate(self.value)
             if other.years:
-                self.value += (other.years * 10000)
+                new_fd.value += (other.years * 10000)
             if other.months:
                 try:
                     new_month = self.month
@@ -80,17 +81,18 @@ class flexibledate(object):
                     day = self.get_day(empty_allowed=True)
                     try:
                         datetime.datetime(new_year, new_month, day or 1)
-                        self.value = "%04d%02d%02d" % (new_year, new_month, day)
+                        new_fd.value = "%04d%02d%02d" % (new_year, new_month, day)
                     except ValueError:
                         raise ValueError("I can't add %s to %s because it would create an invalid date." % (repr(other), repr(self))) 
                 except AttributeError:
                     raise ValueError("You tried to add a flexible date delta with months to a flexible date without months (What is %s + %d months?)" % (self, other.months))
             if other.days:
                 try:
-                    new_date = self.date + datetime.timedelta(days=other.days)
-                    self.value = new_date.strftime('%Y%m%d')
+                    new_date_value = new_fd.date + datetime.timedelta(days=other.days)
+                    new_fd.value = new_date_value.strftime('%Y%m%d')
                 except AttributeError:
                     raise ValueError("You tried to add a flexible date delta with days to a flexible date without days (What is %s + %d days?)" % (self, other.days))
+        return new_fd
 
     def __sub__(self, other):
         if isinstance(other, flexibledatedelta):
