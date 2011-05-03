@@ -148,7 +148,8 @@ class FlexibleDateDescriptor(object):
 
 
 class FlexibleDateField(models.PositiveIntegerField):
-
+    __metaclass__ = models.SubfieldBase
+    
     def get_internal_type(self):
         return 'IntegerField'
 
