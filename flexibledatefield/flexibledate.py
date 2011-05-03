@@ -87,7 +87,7 @@ class flexibledate(object):
                     raise ValueError("You tried to add a flexible date delta with months to a flexible date without months (What is %s + %d months?)" % (self, other.months))
             if other.days:
                 try:
-                    new_date = self.date() + datetime.timedelta(days=other.days)
+                    new_date = self.date + datetime.timedelta(days=other.days)
                     self.value = value.strftime('%Y%m%d')
                 except AttributeError:
                     raise ValueError("You tried to add a flexible date delta with days to a flexible date without days (What is %s + %d days?)" % (self, other.days))
