@@ -174,7 +174,7 @@ class FlexibleDateField(models.PositiveIntegerField):
         if lookup_type == 'year':
             return (int("%d0000" % value), int("%d1231" % value))
         else:
-            return super(FlexibleDateField, self).get_db_prep_lookup(lookup_type, value, connection, prepared)
+            return super(FlexibleDateField, self).get_db_prep_lookup(lookup_type=lookup_type, value=value, connection=connection, prepared=prepared)
 
     def formfield(self, *args, **kwargs):
         defaults={'form_class': FlexibleDateFormField}
