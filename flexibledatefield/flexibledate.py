@@ -12,7 +12,7 @@ _MAX_VALUE = 99991231
 class flexibledate(object):
     def __init__(self, value):
         try:
-            self.value = value.strftime('%Y%m%d')
+            self.value = int(value.strftime('%Y%m%d'))
         except AttributeError:
             self.value = int(value)
         if self.value < _MIN_VALUE or self.value > _MAX_VALUE:
