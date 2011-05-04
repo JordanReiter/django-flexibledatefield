@@ -3,6 +3,10 @@ import datetime, re
 def fix_date_format(s):
     return re.sub(r'\b0+([0-9])', r'\1', s)
 
+def _cmperror(x, y):
+    raise TypeError("can't compare '%s' to '%s'" % (
+                    type(x).__name__, type(y).__name__))
+
 _MIN_VALUE = 10000000
 _MAX_VALUE = 99991231
 class flexibledate(object):
@@ -74,11 +78,11 @@ class flexibledate(object):
                 new_fd.value += (other.years * 10000)
             if other.months:
                 try:
-                    new_month = self.month
+                    new_month = new_fd.month
                     new_month += other.months - 1
-                    new_year = self.year + (new_month / 12)
+                    new_year = new_fd.year + (new_month / 12)
                     new_month = (new_month % 12) + 1
-                    day = self.get_day(empty_allowed=True)
+                    day = new_fd.get_day(empty_allowed=True)
                     try:
                         datetime.datetime(new_year, new_month, day or 1)
                         new_fd.value = "%04d%02d%02d" % (new_year, new_month, day)
