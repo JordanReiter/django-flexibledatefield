@@ -163,6 +163,8 @@ class FlexibleDateField(models.PositiveIntegerField):
         Validates that the input can be converted to a date. 
         Returns a flexibledate object.
         """
+        if isinstance(value, flexibledate):
+            return value
         try:
             return flexibledate(value)
         except ValueError, inst:
