@@ -106,6 +106,7 @@ class FlexibleDateFormField(forms.Field):
         defaults.update(kwargs)
         min_value = defaults.pop('min_value',None)
         max_value = defaults.pop('max_value',None)
+        years = kwargs.pop('years', None)
         defaults['widget']=FlexibleDateWidget(years=years, required=kwargs.get('required',True))
         # these kwargs cause problems for the generic field type
         super(FlexibleDateFormField, self).__init__(*args, **defaults)
