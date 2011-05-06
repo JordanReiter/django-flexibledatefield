@@ -95,7 +95,7 @@ class FlexibleDateWidget(forms.Widget):
         if y == m == d == "0":
             return None
         if y:
-            return '%04d%02d%02d' % (y, m or 0, d or 0)
+            return flexibledate('%04d%02d%02d' % (y, m or 0, d or 0))
         return data.get(name, None)
 
 
