@@ -85,7 +85,7 @@ class flexibledate(object):
                     day = new_fd.get_day(empty_allowed=True)
                     try:
                         datetime.datetime(new_year, new_month, day or 1)
-                        new_fd.value = int("%04d%02d%02d" % (new_year, new_month, day))
+                        new_fd.value = int("%04d%02d%02d" % (new_year, new_month, day or 0))
                     except ValueError:
                         raise ValueError("I can't add %s to %s because it would create an invalid date." % (repr(other), repr(self))) 
                 except AttributeError:
