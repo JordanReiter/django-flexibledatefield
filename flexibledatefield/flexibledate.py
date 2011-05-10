@@ -266,10 +266,7 @@ class flexibledatespan(object):
     def __init__(self, start, end):
         self.start = start
         self.end = end
-        
-    def __len__(self):
-        d = self.start - self.end
-        
+
     def __repr__(self):
         return "%s(%s, %s)" % (
                    'flexibledate.' + self.__class__.__name__,
