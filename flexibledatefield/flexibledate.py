@@ -68,7 +68,7 @@ class flexibledate(object):
     def  __repr__(self):
         return "%s(%d)" % (
                            'flexibledate.' + self.__class__.__name__,
-                           self.value
+                           int(self.value)
                            )
 
     def __add__(self, other):
@@ -85,7 +85,7 @@ class flexibledate(object):
                     day = new_fd.get_day(empty_allowed=True)
                     try:
                         datetime.datetime(new_year, new_month, day or 1)
-                        new_fd.value = "%04d%02d%02d" % (new_year, new_month, day)
+                        new_fd.value = int("%04d%02d%02d" % (new_year, new_month, day))
                     except ValueError:
                         raise ValueError("I can't add %s to %s because it would create an invalid date." % (repr(other), repr(self))) 
                 except AttributeError:
@@ -101,6 +101,18 @@ class flexibledate(object):
     def __sub__(self, other):
         if isinstance(other, flexibledatedelta):
             return self + -other
+        elif isinstance(other, flexibledate):
+            other_month = other.get_month(empty_allowed=True)
+            other_day = other.get_day(empty_allowed=True)
+            diff_years = self.year - other.year
+            diff_months = 0
+            diff_days = 0
+            if other_day and self.get_day(empty_allowed=True):
+                diff_days = self.day - other_day
+            if other_month and self.get_month(empty_allowed=True):
+                diff_months = self.month - other_month
+            return flexibledatedelta(diff_years, diff_months, diff_days)
+                
 
     def __eq__(self, other):
         if isinstance(other, flexibledate):
@@ -182,6 +194,12 @@ class flexibledatedelta(object):
             return flexibledatedelta(self.years+other.years, 
                                      self.months+other.months, 
                                      self.days+other.days)
+        elif isinstance(other, flexibledate):
+            return other + self
+        
+    def __radd__(self, other):
+        return self + other
+
     def __sub__(self, other):
         if isinstance(other, flexibledatedelta):
             return self + -other
@@ -245,6 +263,9 @@ class flexibledatespan(object):
     def __init__(self, start, end):
         self.start = start
         self.end = end
+        
+    def __len__(self):
+        d = self.start - self.end
         
     def __repr__(self):
         return "%s(%s, %s)" % (
