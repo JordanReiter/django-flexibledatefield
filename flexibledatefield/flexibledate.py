@@ -188,7 +188,7 @@ class flexibledatedelta(object):
             s.append("%d month%s" % (plural(self.months)))
         if self.years:
             s.append("%d year%s" % (plural(self.years)))
-        return s
+        return ', '.join(s)
     
     def __add__(self, other):
         if isinstance(other, flexibledatedelta):
