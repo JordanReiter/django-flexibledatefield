@@ -179,6 +179,8 @@ class flexibledatedelta(object):
                            )
 
     def __str__(self):
+        if not (self.years or self.months or self.days):
+            return "0 years"
         def plural(n):
             return n, abs(n) != 1 and "s" or ""
         s = []
