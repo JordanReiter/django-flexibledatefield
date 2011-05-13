@@ -169,7 +169,7 @@ class FlexibleDateField(models.PositiveIntegerField):
             return value
         try:
             return flexibledate(value)
-        except ValueError, inst:
+        except (ValueError, TypeError), inst:
             raise ValidationError(inst)
         
     def get_prep_value(self, value):
