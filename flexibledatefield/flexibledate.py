@@ -115,6 +115,8 @@ class flexibledate(object):
                 
 
     def __eq__(self, other):
+        if other == None:
+            return False
         return self.__cmp(other) == 0
 
     def __ne__(self, other):
