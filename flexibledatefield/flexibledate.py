@@ -115,46 +115,31 @@ class flexibledate(object):
                 
 
     def __eq__(self, other):
-        if isinstance(other, flexibledate):
-            return self.__cmp(other) == 0
-        else:
-            return False
+        return self.__cmp(other) == 0
 
     def __ne__(self, other):
-        if isinstance(other, flexibledate):
-            return self.__cmp(other) != 0
-        else:
-            return True
+        return self.__cmp(other) != 0
 
     def __le__(self, other):
-        if isinstance(other, flexibledate):
-            return self.__cmp(other) <= 0
-        else:
-            _cmperror(self, other)
+        return self.__cmp(other) <= 0
 
     def __lt__(self, other):
-        if isinstance(other, flexibledate):
-            return self.__cmp(other) < 0
-        else:
-            _cmperror(self, other)
+        return self.__cmp(other) < 0
 
     def __ge__(self, other):
-        if isinstance(other, flexibledate):
-            return self.__cmp(other) >= 0
-        else:
-            _cmperror(self, other)
+        return self.__cmp(other) >= 0
 
     def __gt__(self, other):
-        if isinstance(other, flexibledate):
-            return self.__cmp(other) > 0
-        else:
-            _cmperror(self, other)
+        return self.__cmp(other) > 0
 
     def __cmp(self, other):
         if isinstance(other, flexibledate):
             return cmp(self.value, other.value)
         elif isinstance(other, datetime.datetime) or isinstance(other, datetime.date):
             return cmp(self.value, flexibledate(other))
+        else:
+            _cmperror(self, other)
+        
 
 
 class flexibledatedelta(object):
