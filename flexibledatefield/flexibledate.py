@@ -113,7 +113,26 @@ class flexibledate(object):
                 diff_months = self.month - other_month
             return flexibledatedelta(diff_years, diff_months, diff_days)
                 
-    def __cmp__(self, other):
+
+    def __eq__(self, other):
+        return self.__cmp(other) == 0
+
+    def __ne__(self, other):
+        return self.__cmp(other) != 0
+
+    def __le__(self, other):
+        return self.__cmp(other) <= 0
+
+    def __lt__(self, other):
+        return self.__cmp(other) < 0
+
+    def __ge__(self, other):
+        return self.__cmp(other) >= 0
+
+    def __gt__(self, other):
+        return self.__cmp(other) > 0
+
+    def __cmp(self, other):
         if isinstance(other, flexibledate):
             return cmp(self.value, other.value)
         elif isinstance(other, datetime.datetime) or isinstance(other, datetime.date):
