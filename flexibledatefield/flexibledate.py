@@ -132,7 +132,7 @@ class flexibledate(object):
     def __gt__(self, other):
         return self.__cmp(other) > 0
 
-    def __cmp(self, other):
+    def __cmp__(self, other):
         if isinstance(other, flexibledate):
             return cmp(self.value, other.value)
         elif isinstance(other, datetime.datetime) or isinstance(other, datetime.date):
