@@ -37,7 +37,10 @@ class FlexibleDateWidget(forms.Widget):
             self.years = range(this_year-10, this_year+11)
 
     def render(self, name, value, attrs=None):
-        year_val, month_val, day_val = value.get_year(), value.get_month(empty_allowed=True), value.get_day(empty_allowed=True)
+        try:
+            year_val, month_val, day_val = value.get_year(), value.get_month(empty_allowed=True), value.get_day(empty_allowed=True)
+        except AttributeError:
+            year_val, month_val, day_val = None, None, None
 
         output = []
 
