@@ -151,8 +151,10 @@ class flexibledate(object):
             _cmperror(self, other)
 
     def __cmp(self, other):
-        assert isinstance(other, flexibledate)
-        return cmp(self.value, other.value)                     
+        if isinstance(other, flexibledate):
+            return cmp(self.value, other.value)
+        elif isinstance(other, datetime.datetime) or isinstance(other, datetime.date):
+            return cmp(self.value, flexibledate(other))
 
 
 class flexibledatedelta(object):
