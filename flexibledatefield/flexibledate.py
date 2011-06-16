@@ -96,7 +96,10 @@ class flexibledate(object):
                     new_fd.value = new_date_value.strftime('%Y%m%d')
                 except AttributeError:
                     raise ValueError("You tried to add a flexible date delta with days to a flexible date without days (What is %s + %d days?)" % (self, other.days))
-        return new_fd
+            return new_fd
+        elif isinstance(other, datetime.date) or isinstance(other, datetime.datetime):
+            return self + flexibledate(other)
+        return super(flexibledate, self).__add__(other)
 
     def __sub__(self, other):
         if isinstance(other, flexibledatedelta):
@@ -112,6 +115,9 @@ class flexibledate(object):
             if other_month and self.get_month(empty_allowed=True):
                 diff_months = self.month - other_month
             return flexibledatedelta(diff_years, diff_months, diff_days)
+        elif isinstance(other, datetime.date) or isinstance(other, datetime.datetime):
+            return self + -flexibledate(other)
+        return super(flexibledate, self).__sub__(other)
                 
 
     def __eq__(self, other):
