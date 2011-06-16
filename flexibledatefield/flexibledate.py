@@ -4,7 +4,7 @@ def fix_date_format(s):
     return re.sub(r'\b0+([0-9])', r'\1', s)
 
 def _cmperror(x, y):
-    raise TypeError("can't compare '%s' to '%s'" % (
+    raise TypeError("can't compare '%s' to '%s'.." % (
                     type(x).__name__, type(y).__name__))
 
 _MIN_VALUE = 10000000
@@ -99,7 +99,7 @@ class flexibledate(object):
             return new_fd
         elif isinstance(other, datetime.date) or isinstance(other, datetime.datetime):
             return self + flexibledate(other)
-        return super(flexibledate, self).__add__(other)
+        raise TypeError("unsupported operand type(s) for +: %s and %s" % (type(self).__name__, type(other).__name__))
 
     def __sub__(self, other):
         if isinstance(other, flexibledatedelta):
@@ -117,7 +117,7 @@ class flexibledate(object):
             return flexibledatedelta(diff_years, diff_months, diff_days)
         elif isinstance(other, datetime.date) or isinstance(other, datetime.datetime):
             return self + -flexibledate(other)
-        return super(flexibledate, self).__sub__(other)
+        raise TypeError("unsupported operand type(s) for -: %s and %s" % (type(self).__name__, type(other).__name__))
                 
 
     def __eq__(self, other):
