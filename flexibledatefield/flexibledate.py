@@ -64,6 +64,9 @@ class flexibledate(object):
                 return datetime.datetime.strftime(datetime.date(self.year, self.month, 1), '%B %Y')
             except AttributeError:
                 return str(self.year)
+                
+    def __int__(self):
+        return int(self.value)
 
     def  __repr__(self):
         return "%s(%d)" % (
