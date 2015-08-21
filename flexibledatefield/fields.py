@@ -1,18 +1,13 @@
 import datetime
-import re
 
 from django.core.exceptions import ValidationError
-from django.core import validators
 from django import forms
 from django.db import models
-from django.forms.widgets import Select, TextInput
+from django.forms.widgets import Select
 from django.utils.dates import MONTHS
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext as _
 
 from flexibledate import flexibledate
-
-from django import forms
 
 class FlexibleDateWidget(forms.Widget):
     """
@@ -133,7 +128,7 @@ class FlexibleDateDescriptor(object):
                 % (self.field.name, owner.__name__))
         class result(int):
             def __init__(self,value,*args,**kwargs):
-                self.display = flexibledateformat(value)
+                self.display = str(flexibledate(value))
                 super(result,self).__init__(*args,**kwargs)
         try:
             return result(instance.__dict__[self.field.name])
@@ -169,8 +164,8 @@ class FlexibleDateField(models.PositiveIntegerField):
             return value
         try:
             return flexibledate(value)
-        except (ValueError, TypeError), inst:
-            raise ValidationError(inst)
+        except (ValueError, TypeError) as err:
+            raise ValidationError(err)
         
     def get_prep_value(self, value):
         try:
