@@ -1,5 +1,4 @@
 from django import template
-from django.template.loader import render_to_string
 from django.template.defaultfilters import date as django_date_filter
 import re, datetime
 
