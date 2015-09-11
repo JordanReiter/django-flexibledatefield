@@ -7,7 +7,7 @@ from django.forms.widgets import Select
 from django.utils.dates import MONTHS
 from django.utils.safestring import mark_safe
 
-from flexibledate import flexibledate
+from .flexibledate import flexibledate, parse_flexibledate
 
 class FlexibleDateWidget(forms.Widget):
     """
@@ -32,7 +32,10 @@ class FlexibleDateWidget(forms.Widget):
             self.years = range(this_year-10, this_year+11)
 
     def render(self, name, value, attrs=None):
-        year_val, month_val, day_val = value.get_year(), value.get_month(empty_allowed=True), value.get_day(empty_allowed=True)
+        if value:
+            year_val, month_val, day_val = value.get_year(), value.get_month(empty_allowed=True), value.get_day(empty_allowed=True)
+        else:
+            year_val = month_val = day_val = None
 
         output = []
 
@@ -50,7 +53,7 @@ class FlexibleDateWidget(forms.Widget):
         select_html = s.render(self.year_field % name, year_val, local_attrs)
         output.append(select_html)
 
-        month_choices = MONTHS.items()
+        month_choices = list(MONTHS.items())
         month_choices.append(self.none_value)
         month_choices.sort()
         local_attrs['id'] = self.month_field % id_
@@ -106,46 +109,42 @@ class FlexibleDateFormField(forms.Field):
         # these kwargs cause problems for the generic field type
         super(FlexibleDateFormField, self).__init__(*args, **defaults)
 
+class FlexibleDateProxy(flexibledate):
+
+    def __repr__(self):
+        return "flexibledate({})".format(self.value)
+
+    @property
+    def display(self):
+        return str(self)
 
 
 class FlexibleDateDescriptor(object):
-    """
-    A descriptor for flexible date fields on a model instance. 
-
-        >>> instance.flexibledate.value
-        20100400
-        
-        >>> instance.flexibledate.display
-        April 2010
-    """
-    def __init__(self, field):
-        self.field = field
+    def __init__(self, field_name, proxy_class):
+        self.field_name = field_name
+        self.proxy_class = proxy_class
 
     def __get__(self, instance=None, owner=None):
-        if instance is None:
-            raise AttributeError(
-                "The '%s' attribute can only be accessed from %s instances."
-                % (self.field.name, owner.__name__))
-        class result(int):
-            def __init__(self,value,*args,**kwargs):
-                self.display = str(flexibledate(value))
-                super(result,self).__init__(*args,**kwargs)
-        try:
-            return result(instance.__dict__[self.field.name])
-        except TypeError:
-            return None
+        # grab the original value before we proxy
+        value = instance.__dict__[self.field_name]
+        if value is None:
+            # We can't proxy a None through a unicode sub-class
+            return value
+        return self.proxy_class.parse(value)
 
     def __set__(self, instance, value):
-        try:
-            instance.__dict__[self.field.name] = int(value)
-        except:
-            instance.__dict__[self.field.name] = None
-
+        instance.__dict__[self.field_name] = value
 
 
 class FlexibleDateField(models.PositiveIntegerField):
     __metaclass__ = models.SubfieldBase
     
+    def contribute_to_class(self, cls, name):
+        super(FlexibleDateField, self).contribute_to_class(cls, name)
+        # Add our descriptor to this field in place of of the normal attribute
+        setattr(cls, self.name, 
+                FlexibleDateDescriptor(self.name, FlexibleDateProxy) )
+
     def get_internal_type(self):
         return 'IntegerField'
 
@@ -160,19 +159,19 @@ class FlexibleDateField(models.PositiveIntegerField):
         """
         if not value:
             return None
+
         if isinstance(value, flexibledate):
             return value
+
         try:
-            return flexibledate(value)
+            return flexibledate.parse(value)
         except (ValueError, TypeError) as err:
             raise ValidationError(err)
         
     def get_prep_value(self, value):
-        try:
-            value = value.value
-        except:
-            pass
-        return value
+        if not value:
+            return None
+        return int(self.to_python(value))
 
     def get_db_prep_lookup(self, lookup_type, value, connection, prepared=False):
         if isinstance(value, flexibledate):

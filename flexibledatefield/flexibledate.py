@@ -7,6 +7,42 @@ def _cmperror(x, y):
     raise TypeError("can't compare '%s' to '%s'" % (
                     type(x).__name__, type(y).__name__))
 
+DATE_PATTERNS = (
+    '%Y-%m-%d %H:%M:%S.%f',
+    '%Y-%m-%d %H:%M:%S',
+    '%Y-%m-%d',
+    '%Y-%b-%d',
+    '%Y-%b (%d)',
+    '%Y-%m (%d)',
+    '%b %Y (%d)',
+    '%B %Y (%d)',
+)
+
+def parse_flexibledate(date_string):
+    if not date_string:
+        return None
+    if len(date_string) == 4 and '1000' < date_string < '9999':
+        return "{}0000".format(date_string)
+    no_day = False
+    date_val = None
+    for date_patt in DATE_PATTERNS:
+        match_string = date_string.strip()
+        no_day = ' (%d)' in date_patt 
+        if no_day:
+            match_string += ' (01)'
+        try:
+            date_val = datetime.datetime.strptime(match_string.strip(), date_patt)
+            break
+        except ValueError as err:
+            continue
+    if not date_val:
+        raise ValueError("{} is not a valid format for flexibledate".format(date_string))
+    date_int = int(date_val.strftime('%Y%m%d'))
+    if no_day:
+        date_int = date_int // 100 * 100
+    return date_int
+
+
 _MIN_VALUE = 10000000
 _MAX_VALUE = 99991231
 class flexibledate(object):
@@ -24,6 +60,14 @@ class flexibledate(object):
                 self.date
             except AttributeError:
                 raise ValueError("Invalid value for flexible date")
+    
+    @classmethod
+    def parse(cls, dt):
+        dt = str(dt)
+        if len(dt) == 8 and str(_MIN_VALUE) < dt < str(_MAX_VALUE):
+            return cls(int(dt))
+
+        return cls(parse_flexibledate(dt))
 
     def get_date(self):
         try:
@@ -56,6 +100,9 @@ class flexibledate(object):
             raise AttributeError("%s has no attribute 'day'" % type(self).__name__)
     day = property(get_day)
 
+    def __int__(self):
+        return self.value
+
     def __str__(self):
         try:
             return fix_date_format(datetime.datetime.strftime(self.date, '%b %d, %Y'))
@@ -86,6 +133,7 @@ class flexibledate(object):
                     try:
                         datetime.datetime(new_year, new_month, day or 1)
                         new_fd.value = int("%04d%02d%02d" % (new_year, new_month, day or 0))
+                        return new_fd
                     except ValueError:
                         raise ValueError("I can't add %s to %s because it would create an invalid date." % (repr(other), repr(self))) 
                 except AttributeError:
@@ -96,7 +144,16 @@ class flexibledate(object):
                     new_fd.value = new_date_value.strftime('%Y%m%d')
                 except AttributeError:
                     raise ValueError("You tried to add a flexible date delta with days to a flexible date without days (What is %s + %d days?)" % (self, other.days))
-        return new_fd
+        elif isinstance(other, datetime.timedelta):
+            try:
+                new_date_value = self.date + other
+                return flexibledate(new_date_value)
+            except (AttributeError, TypeError):
+                pass
+        return NotImplemented
+    
+    def __radd__(self, other):
+        return self + other
 
     def __sub__(self, other):
         if isinstance(other, flexibledatedelta):
@@ -112,43 +169,107 @@ class flexibledate(object):
             if other_month and self.get_month(empty_allowed=True):
                 diff_months = self.month - other_month
             return flexibledatedelta(diff_years, diff_months, diff_days)
-                
+        elif isinstance(object, datetime.timedelta):
+            try:
+                new_date_value = self.date - other
+                return flexibledate(new_date_value)
+            except (AttributeError, TypeError):
+                pass
+        elif isinstance(object, (datetime.datetime, datetime.date)):
+            try:
+                return self - flexibledate(other)
+            except (AttributeError, TypeError, ValueError):
+                pass
+        return NotImplemented
+    
+    def __rsub__(self, other):
+        date_cls = None
+        if isinstance(other, (datetime.date, datetime.datetime)):
+            date_cls = other.__class__
+        if date_cls:
+            return (other - date_cls(
+                self.year, 
+                self.get_month(True) or other.month,
+                self.get_day(True) or other.day
+            ))
 
     def __eq__(self, other):
         if isinstance(other, flexibledate):
             return self.value == other.value
-        else:
-            return False
+        elif isinstance(other, (datetime.date)):
+            try:
+                return self.date.date() == other
+            except (AttributeError, TypeError, ValueError):
+                pass
+        elif isinstance(other, datetime.datetime):
+            try:
+                return self.date == other
+            except (AttributeError, TypeError, ValueError):
+                pass
+        return NotImplemented
 
     def __ne__(self, other):
-        if isinstance(other, flexibledate):
-            return self.value != other.value
-        else:
-            return True
+        return not (self == other)
 
     def __le__(self, other):
         if isinstance(other, flexibledate):
             return self.value <= other.value
         else:
-            _cmperror(self, other)
+            try:
+                my_parts = (
+                    self.year, 
+                    self.get_month(True),
+                    self.get_day(True)
+                )
+                other_parts = (other.year, other.month, other.day)
+            except AttributeError:
+                _cmperror(self, other)
+            return (my_parts <= other_parts)
 
     def __lt__(self, other):
         if isinstance(other, flexibledate):
             return self.value < other.value
         else:
-            _cmperror(self, other)
+            try:
+                my_parts = (
+                    self.year, 
+                    self.get_month(True),
+                    self.get_day(True)
+                )
+                other_parts = (other.year, other.month, other.day)
+            except AttributeError:
+                _cmperror(self, other)
+            return (my_parts < other_parts)
 
     def __ge__(self, other):
         if isinstance(other, flexibledate):
             return self.value >= other.value
         else:
-            _cmperror(self, other)
+            try:
+                my_parts = (
+                    self.year, 
+                    self.get_month(True),
+                    self.get_day(True)
+                )
+                other_parts = (other.year, other.month, other.day)
+            except AttributeError:
+                _cmperror(self, other)
+            return (my_parts >= other_parts)
 
     def __gt__(self, other):
         if isinstance(other, flexibledate):
             return self.value > other.value
         else:
-            _cmperror(self, other)
+            try:
+                my_parts = (
+                    self.year, 
+                    self.get_month(True),
+                    self.get_day(True)
+                )
+                other_parts = (other.year, other.month, other.day)
+            except AttributeError:
+                _cmperror(self, other)
+            return (my_parts > other_parts)
 
 
 class flexibledatedelta(object):
@@ -304,3 +425,6 @@ class flexibledatespan(object):
                 datetime.datetime.strftime(end_date,'%b %Y'),
             )
         return "%s-%s" % ( start_year, end_year)
+        
+
+
