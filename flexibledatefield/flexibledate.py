@@ -10,6 +10,7 @@ def _cmperror(x, y):
 DATE_PATTERNS = (
     '%Y-%m-%d %H:%M:%S.%f',
     '%Y-%m-%d %H:%M:%S',
+    '%b %d, %Y',
     '%Y-%m-%d',
     '%Y-%b-%d',
     '%Y-%b (%d)',
