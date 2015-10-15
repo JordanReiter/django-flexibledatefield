@@ -170,13 +170,13 @@ class flexibledate(object):
             if other_month and self.get_month(empty_allowed=True):
                 diff_months = self.month - other_month
             return flexibledatedelta(diff_years, diff_months, diff_days)
-        elif isinstance(object, datetime.timedelta):
+        elif isinstance(other, datetime.timedelta):
             try:
                 new_date_value = self.date - other
                 return flexibledate(new_date_value)
             except (AttributeError, TypeError):
                 pass
-        elif isinstance(object, (datetime.datetime, datetime.date)):
+        elif isinstance(other, (datetime.datetime, datetime.date)):
             try:
                 return self - flexibledate(other)
             except (AttributeError, TypeError, ValueError):
