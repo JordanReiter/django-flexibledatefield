@@ -34,7 +34,7 @@ def parse_flexibledate(date_string):
         try:
             date_val = datetime.datetime.strptime(match_string.strip(), date_patt)
             break
-        except ValueError as err:
+        except ValueError:
             continue
     if not date_val:
         raise ValueError("{} is not a valid format for flexibledate".format(date_string))
@@ -217,6 +217,10 @@ class flexibledate(object):
             return self.value <= other.value
         else:
             try:
+                return int(self) <= int(other)
+            except (TypeError, ValueError):
+                pass
+            try:
                 my_parts = (
                     self.year, 
                     self.get_month(True),
@@ -231,6 +235,10 @@ class flexibledate(object):
         if isinstance(other, flexibledate):
             return self.value < other.value
         else:
+            try:
+                return int(self) < int(other)
+            except (TypeError, ValueError):
+                pass
             try:
                 my_parts = (
                     self.year, 
@@ -247,6 +255,10 @@ class flexibledate(object):
             return self.value >= other.value
         else:
             try:
+                return int(self) >= int(other)
+            except (TypeError, ValueError):
+                pass
+            try:
                 my_parts = (
                     self.year, 
                     self.get_month(True),
@@ -261,6 +273,10 @@ class flexibledate(object):
         if isinstance(other, flexibledate):
             return self.value > other.value
         else:
+            try:
+                return int(self) > int(other)
+            except (TypeError, ValueError):
+                pass
             try:
                 my_parts = (
                     self.year, 
