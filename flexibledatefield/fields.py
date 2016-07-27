@@ -137,7 +137,11 @@ class FlexibleDateDescriptor(object):
 
 
 class FlexibleDateField(models.PositiveIntegerField):
-    __metaclass__ = models.SubfieldBase
+
+    def from_db_value(value, expression, connection, context):
+        if value is None:
+            return None
+        return flexibledate.parse(value)
     
     def contribute_to_class(self, cls, name):
         super(FlexibleDateField, self).contribute_to_class(cls, name)
