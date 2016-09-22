@@ -10,7 +10,7 @@ from django.utils.dates import MONTHS
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 
-from flexibledate import flexibledate
+from .flexibledate import flexibledate
 
 from django import forms
 
@@ -76,7 +76,7 @@ class FlexibleDateWidget(forms.Widget):
         select_html = s.render(self.day_field % name, day_val, local_attrs)
         output.append(select_html)
 
-        return mark_safe(u'\n'.join(output))
+        return mark_safe('\n'.join(output))
 
     def id_for_label(self, id_):
         return '%s_year' % id_
@@ -152,7 +152,9 @@ class FlexibleDateDescriptor(object):
 
 
 class FlexibleDateField(models.PositiveIntegerField):
-    __metaclass__ = models.SubfieldBase
+
+    def from_db_value(self, value, expression, connection, context):
+        return self.to_python(value)
     
     def get_internal_type(self):
         return 'IntegerField'
@@ -172,7 +174,7 @@ class FlexibleDateField(models.PositiveIntegerField):
             return value
         try:
             return flexibledate(value)
-        except (ValueError, TypeError), inst:
+        except (ValueError, TypeError) as inst:
             raise ValidationError(inst)
         
     def get_prep_value(self, value):
