@@ -61,7 +61,7 @@ class flexibledate(object):
                 self.date
             except AttributeError:
                 raise ValueError("Invalid value for flexible date")
-    
+
     @classmethod
     def parse(cls, dt):
         dt = str(dt)
@@ -101,9 +101,6 @@ class flexibledate(object):
             raise AttributeError("%s has no attribute 'day'" % type(self).__name__)
     day = property(get_day)
 
-    def __int__(self):
-        return self.value
-
     def __str__(self):
         try:
             return fix_date_format(datetime.datetime.strftime(self.date, '%b %d, %Y'))
@@ -112,6 +109,9 @@ class flexibledate(object):
                 return datetime.datetime.strftime(datetime.date(self.year, self.month, 1), '%B %Y')
             except AttributeError:
                 return str(self.year)
+                
+    def __int__(self):
+        return int(self.value)
 
     def  __repr__(self):
         return "%s(%d)" % (
@@ -134,7 +134,6 @@ class flexibledate(object):
                     try:
                         datetime.datetime(new_year, new_month, day or 1)
                         new_fd.value = int("%04d%02d%02d" % (new_year, new_month, day or 0))
-                        return new_fd
                     except ValueError:
                         raise ValueError("I can't add %s to %s because it would create an invalid date." % (repr(other), repr(self))) 
                 except AttributeError:
@@ -152,7 +151,7 @@ class flexibledate(object):
             except (AttributeError, TypeError):
                 pass
         return NotImplemented
-    
+
     def __radd__(self, other):
         return self + other
 
@@ -182,7 +181,7 @@ class flexibledate(object):
             except (AttributeError, TypeError, ValueError):
                 pass
         return NotImplemented
-    
+                
     def __rsub__(self, other):
         date_cls = None
         if isinstance(other, (datetime.date, datetime.datetime)):
@@ -288,7 +287,7 @@ class flexibledate(object):
                 _cmperror(self, other)
             return (my_parts > other_parts)
 
-
+        
 class flexibledatedelta(object):
     def __init__(self, years=0, months=0, days=0):
         self.years = years

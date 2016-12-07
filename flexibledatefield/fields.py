@@ -7,7 +7,7 @@ from django.forms.widgets import Select
 from django.utils.dates import MONTHS
 from django.utils.safestring import mark_safe
 
-from .flexibledate import flexibledate, parse_flexibledate
+from .flexibledate import flexibledate
 
 class FlexibleDateWidget(forms.Widget):
     """
@@ -32,10 +32,10 @@ class FlexibleDateWidget(forms.Widget):
             self.years = range(this_year-10, this_year+11)
 
     def render(self, name, value, attrs=None):
-        if value:
+        try:
             year_val, month_val, day_val = value.get_year(), value.get_month(empty_allowed=True), value.get_day(empty_allowed=True)
-        else:
-            year_val = month_val = day_val = None
+        except AttributeError:
+            year_val, month_val, day_val = None, None, None
 
         output = []
 
@@ -71,7 +71,7 @@ class FlexibleDateWidget(forms.Widget):
         select_html = s.render(self.day_field % name, day_val, local_attrs)
         output.append(select_html)
 
-        return mark_safe(u'\n'.join(output))
+        return mark_safe('\n'.join(output))
 
     def id_for_label(self, id_):
         return '%s_year' % id_
@@ -118,7 +118,7 @@ class FlexibleDateProxy(flexibledate):
     def display(self):
         return str(self)
 
-
+        
 class FlexibleDateDescriptor(object):
     def __init__(self, field_name, proxy_class):
         self.field_name = field_name
