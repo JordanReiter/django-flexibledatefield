@@ -180,6 +180,8 @@ class FlexibleDateField(models.PositiveIntegerField):
     def get_db_prep_lookup(self, lookup_type, value, connection, prepared=False):
         if isinstance(value, flexibledate):
             value = value.value
+        elif isinstance(value, (list, tuple)):
+            value = [int(self.get_prep_value(vv) for vv in value]
         else:
             try:
                 value = int(value.strftime('%Y%m%d'))
