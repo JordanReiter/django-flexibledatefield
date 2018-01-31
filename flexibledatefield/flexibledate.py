@@ -56,7 +56,7 @@ class flexibledate(object):
             raise ValueError("Flexible dates must be between the years %d and %d" % ( _MIN_VALUE/10000, _MAX_VALUE/10000 ))
         if int(str(self.value)[4:6]) > 12:
             raise ValueError("Invalid value for flexible date")
-        if int(str(self.value)[7:8]) > 0:
+        if int(str(self.value)[6:8]) > 0:
             try:
                 self.date
             except AttributeError:
