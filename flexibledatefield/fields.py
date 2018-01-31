@@ -3,111 +3,123 @@ import datetime
 from django.core.exceptions import ValidationError
 from django import forms
 from django.db import models
-from django.forms.widgets import Select
+from django.forms.widgets import Select, NumberInput
 from django.utils.dates import MONTHS
 from django.utils.safestring import mark_safe
+from django.utils.translation import ugettext_lazy as _
 
 from .flexibledate import flexibledate, parse_flexibledate
 
-class FlexibleDateWidget(forms.Widget):
+MONTH_CHOICES = [(0, _('(Month)'))] + [(str(mi), mm) for mi, mm in MONTHS.items()]
+
+class FlexibleDateWidget(forms.MultiWidget):
     """
     A Widget that splits date input into three inputs
 
     This also serves as an example of a Widget that has more than one HTML
     element and hence implements value_from_datadict.
     """
-    none_value = (0, '(optional)')
-    month_field = '%s_month'
-    day_field = '%s_day'
-    year_field = '%s_year'
+    template_name = 'flexibledatefield/widgets/flexibledatefield.html'
 
-    def __init__(self, attrs=None, years=None, required=True):
-        # years is an optional list/tuple of years to use in the "year" select box.
-        self.attrs = attrs or {}
-        self.required = required
-        if years:
-            self.years = years
-        else:
-            this_year = datetime.date.today().year
-            self.years = range(this_year-10, this_year+11)
+    def __init__(self, attrs=None, date_format=None, time_format=None):
+        year_attrs = dict(attrs or {})
+        year_attrs['size'] = 4
+        if attrs:
+            year_attrs['required'] = attrs.pop('required', None)
+        day_attrs = dict(attrs or {})
+        day_attrs['size'] = 2
+        day_attrs['required'] = False
+        month_attrs = dict(attrs or {})
+        month_attrs['required'] = False
+        widgets = (
+            NumberInput(attrs=year_attrs),
+            Select(attrs=month_attrs, choices=MONTH_CHOICES),
+            NumberInput(attrs=day_attrs),
+        )
+        self._is_required = False
+        super(FlexibleDateWidget, self).__init__(widgets, attrs)
 
-    def render(self, name, value, attrs=None):
+    def get_context(self, name, value, attrs):
+        context = super(FlexibleDateWidget, self).get_context(name, value, attrs)
+        for widget in context['widget']['subwidgets'][1:]:
+            widget['attrs']['required'] = False
+        return context
+
+    def decompress(self, value):
         if value:
-            year_val, month_val, day_val = value.get_year(), value.get_month(empty_allowed=True), value.get_day(empty_allowed=True)
-        else:
-            year_val = month_val = day_val = None
-
-        output = []
-
-        if 'id' in self.attrs:
-            id_ = self.attrs['id']
-        else:
-            id_ = 'id_%s' % name
-                        
-        local_attrs = self.build_attrs(id=self.year_field % id_)
-        year_choices = [(i, i) for i in self.years]
-        year_choices.reverse()
-        if not self.required:
-            year_choices = [(0,'(year)')] + year_choices
-        s = Select(choices=year_choices)
-        select_html = s.render(self.year_field % name, year_val, local_attrs)
-        output.append(select_html)
-
-        month_choices = list(MONTHS.items())
-        month_choices.append(self.none_value)
-        month_choices.sort()
-        local_attrs['id'] = self.month_field % id_
-        
-        s = Select(choices=month_choices)
-        select_html = s.render(self.month_field % name, month_val, local_attrs)
-        output.append(select_html)
-
-        
-        day_choices = [(i, i) for i in range(1, 32)]
-        day_choices.insert(0, self.none_value)
-        local_attrs['id'] = self.day_field % id_
-        
-        s = Select(choices=day_choices)
-        select_html = s.render(self.day_field % name, day_val, local_attrs)
-        output.append(select_html)
-
-        return mark_safe(u'\n'.join(output))
-
-    def id_for_label(self, id_):
-        return '%s_year' % id_
-    id_for_label = classmethod(id_for_label)
-
-    def value_from_datadict(self, data, files, name):
-        try:
-            y = int(data.get(self.year_field % name))
-        except:
-            y = 0
-        try:
-            m = int(data.get(self.month_field % name))
-        except:
-            m = 0
-        try:
-            d = int(data.get(self.day_field % name))
-        except:
-            d = 0
-        if y == m == d == "0":
-            return None
-        if y:
-            return flexibledate('%04d%02d%02d' % (y, m or 0, d or 0))
-        return data.get(name, None)
+            value = flexibledate(value)
+            return [
+                value.year,
+                value.get_month(True),
+                value.get_day(True)
+            ]
+        return [None, None, None]
 
 
+class FlexibleDateFormField(forms.MultiValueField):
+    widget = FlexibleDateWidget
 
-class FlexibleDateFormField(forms.Field):
-    def __init__(self,*args,**kwargs):
-        defaults={}
-        defaults.update(kwargs)
-        min_value = defaults.pop('min_value',None)
-        max_value = defaults.pop('max_value',None)
-        years = defaults.pop('years', None)
-        defaults['widget']=FlexibleDateWidget(years=years, required=kwargs.get('required',True))
-        # these kwargs cause problems for the generic field type
-        super(FlexibleDateFormField, self).__init__(*args, **defaults)
+    default_error_messages = {
+        'invalid_year': _('Enter a valid year.'),
+        'invalid_month': _('Enter a valid month.'),
+        'invalid_day': _('Enter a valid value for day.'),
+    }
+#
+#     def __init__(self,*args,**kwargs):
+#         defaults={}
+#         defaults.update(kwargs)
+#         min_value = defaults.pop('min_value',None)
+#         max_value = defaults.pop('max_value',None)
+#         years = defaults.pop('years', None)
+#         defaults['widget']=FlexibleDateWidget(years=years, required=kwargs.get('required',True))
+#         # these kwargs cause problems for the generic field type
+#         super(FlexibleDateFormField, self).__init__(*args, **defaults)
+
+    def __init__(self, input_date_formats=None, input_time_formats=None, *args, **kwargs):
+        errors = self.default_error_messages.copy()
+        if 'error_messages' in kwargs:
+            errors.update(kwargs['error_messages'])
+        localize = kwargs.get('localize', False)
+        fields = (
+            forms.IntegerField(error_messages={'invalid': errors['invalid_year']},
+                      localize=localize),
+            forms.ChoiceField(error_messages={'invalid': errors['invalid_month']},
+                      choices=MONTH_CHOICES, localize=localize, required=False),
+            forms.IntegerField(error_messages={'invalid': errors['invalid_day']},
+                      localize=localize, required=False),
+        )
+        super(FlexibleDateFormField, self).__init__(fields, *args, **kwargs)
+
+
+    def compress(self, data_list):
+        if data_list:
+            try:
+                year, month, day = data_list
+            except (ValueError, TypeError):
+                raise ValidationError(_("Invalid value for date."))
+            try:
+                year = int(year)
+            except ValueError:
+                year = None
+            if not year or year in self.empty_values:
+                raise ValidationError(self.error_messages['invalid_year'], code='invalid_year')
+            if month or day:
+                try:
+                    month = int(month)
+                except (ValueError):
+                    month = 0
+                if month not in MONTHS:
+                    raise ValidationError(self.error_messages['invalid_month'], code='invalid_month')
+            if day:
+                try:
+                    day = int(day)
+                    _ = datetime.date(year, month, day)
+                except (ValueError):
+                    raise ValidationError(self.error_messages['invalid_day'], code='invalid_day')
+            result = flexibledate('{0:04d}{1:02d}{2:02d}'.format(year, month, day))
+            return result
+        return None
+
 
 class FlexibleDateProxy(flexibledate):
 
@@ -142,11 +154,11 @@ class FlexibleDateField(models.PositiveIntegerField):
         if value is None:
             return None
         return flexibledate.parse(value)
-    
+
     def contribute_to_class(self, cls, name):
         super(FlexibleDateField, self).contribute_to_class(cls, name)
         # Add our descriptor to this field in place of of the normal attribute
-        setattr(cls, self.name, 
+        setattr(cls, self.name,
                 FlexibleDateDescriptor(self.name, FlexibleDateProxy) )
 
     def get_internal_type(self):
@@ -158,7 +170,7 @@ class FlexibleDateField(models.PositiveIntegerField):
 
     def to_python(self, value):
         """
-        Validates that the input can be converted to a date. 
+        Validates that the input can be converted to a date.
         Returns a flexibledate object.
         """
         if not value:
@@ -171,7 +183,7 @@ class FlexibleDateField(models.PositiveIntegerField):
             return flexibledate.parse(value)
         except (ValueError, TypeError) as err:
             raise ValidationError(err)
-        
+
     def get_prep_value(self, value):
         if not value:
             return None
