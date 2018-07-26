@@ -9,6 +9,7 @@ from django.utils.safestring import mark_safe
 
 from .flexibledate import flexibledate, parse_flexibledate
 
+
 class FlexibleDateWidget(forms.Widget):
     """
     A Widget that splits date input into three inputs
@@ -32,10 +33,10 @@ class FlexibleDateWidget(forms.Widget):
             self.years = range(this_year-10, this_year+11)
 
     def render(self, name, value, attrs=None):
-        if value:
+        try:
             year_val, month_val, day_val = value.get_year(), value.get_month(empty_allowed=True), value.get_day(empty_allowed=True)
-        else:
-            year_val = month_val = day_val = None
+        except AttributeError:
+            year_val, month_val, day_val = None, None, None
 
         output = []
 
@@ -43,7 +44,7 @@ class FlexibleDateWidget(forms.Widget):
             id_ = self.attrs['id']
         else:
             id_ = 'id_%s' % name
-                        
+
         local_attrs = self.build_attrs(id=self.year_field % id_)
         year_choices = [(i, i) for i in self.years]
         year_choices.reverse()
@@ -57,16 +58,16 @@ class FlexibleDateWidget(forms.Widget):
         month_choices.append(self.none_value)
         month_choices.sort()
         local_attrs['id'] = self.month_field % id_
-        
+
         s = Select(choices=month_choices)
         select_html = s.render(self.month_field % name, month_val, local_attrs)
         output.append(select_html)
 
-        
+
         day_choices = [(i, i) for i in range(1, 32)]
         day_choices.insert(0, self.none_value)
         local_attrs['id'] = self.day_field % id_
-        
+
         s = Select(choices=day_choices)
         select_html = s.render(self.day_field % name, day_val, local_attrs)
         output.append(select_html)
@@ -109,6 +110,8 @@ class FlexibleDateFormField(forms.Field):
         # these kwargs cause problems for the generic field type
         super(FlexibleDateFormField, self).__init__(*args, **defaults)
 
+
+
 class FlexibleDateProxy(flexibledate):
 
     def __repr__(self):
@@ -120,6 +123,15 @@ class FlexibleDateProxy(flexibledate):
 
 
 class FlexibleDateDescriptor(object):
+    """
+    A descriptor for flexible date fields on a model instance.
+
+        >>> instance.flexibledate.value
+        20100400
+
+        >>> instance.flexibledate.display
+        April 2010
+    """
     def __init__(self, field_name, proxy_class):
         self.field_name = field_name
         self.proxy_class = proxy_class
@@ -142,12 +154,13 @@ class FlexibleDateField(models.PositiveIntegerField):
         if value is None:
             return None
         return flexibledate.parse(value)
-    
+
     def contribute_to_class(self, cls, name):
         super(FlexibleDateField, self).contribute_to_class(cls, name)
         # Add our descriptor to this field in place of of the normal attribute
-        setattr(cls, self.name, 
+        setattr(cls, self.name,
                 FlexibleDateDescriptor(self.name, FlexibleDateProxy) )
+
 
     def get_internal_type(self):
         return 'IntegerField'
@@ -158,7 +171,7 @@ class FlexibleDateField(models.PositiveIntegerField):
 
     def to_python(self, value):
         """
-        Validates that the input can be converted to a date. 
+        Validates that the input can be converted to a date.
         Returns a flexibledate object.
         """
         if not value:
@@ -171,7 +184,7 @@ class FlexibleDateField(models.PositiveIntegerField):
             return flexibledate.parse(value)
         except (ValueError, TypeError) as err:
             raise ValidationError(err)
-        
+
     def get_prep_value(self, value):
         if not value:
             return None

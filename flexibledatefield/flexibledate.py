@@ -3,10 +3,6 @@ import datetime, re
 def fix_date_format(s):
     return re.sub(r'\b0+([0-9])', r'\1', s)
 
-def _cmperror(x, y):
-    raise TypeError("can't compare '%s' to '%s'" % (
-                    type(x).__name__, type(y).__name__))
-
 DATE_PATTERNS = (
     '%Y-%m-%d %H:%M:%S.%f',
     '%Y-%m-%d %H:%M:%S',
@@ -61,7 +57,7 @@ class flexibledate(object):
                 self.date
             except AttributeError:
                 raise ValueError("Invalid value for flexible date")
-    
+
     @classmethod
     def parse(cls, dt):
         dt = str(dt)
@@ -112,7 +108,7 @@ class flexibledate(object):
                 return datetime.datetime.strftime(datetime.date(self.year, self.month, 1), '%B %Y')
             except AttributeError:
                 return str(self.year)
-
+                
     def  __repr__(self):
         return "%s(%d)" % (
                            'flexibledate.' + self.__class__.__name__,
@@ -134,7 +130,6 @@ class flexibledate(object):
                     try:
                         datetime.datetime(new_year, new_month, day or 1)
                         new_fd.value = int("%04d%02d%02d" % (new_year, new_month, day or 0))
-                        return new_fd
                     except ValueError:
                         raise ValueError("I can't add %s to %s because it would create an invalid date." % (repr(other), repr(self))) 
                 except AttributeError:
@@ -145,6 +140,9 @@ class flexibledate(object):
                     new_fd.value = new_date_value.strftime('%Y%m%d')
                 except AttributeError:
                     raise ValueError("You tried to add a flexible date delta with days to a flexible date without days (What is %s + %d days?)" % (self, other.days))
+            return new_fd
+        elif isinstance(other, datetime.date) or isinstance(other, datetime.datetime):
+            return self + flexibledate(other)
         elif isinstance(other, datetime.timedelta):
             try:
                 new_date_value = self.date + other
@@ -152,7 +150,7 @@ class flexibledate(object):
             except (AttributeError, TypeError):
                 pass
         return NotImplemented
-    
+
     def __radd__(self, other):
         return self + other
 
@@ -182,7 +180,6 @@ class flexibledate(object):
             except (AttributeError, TypeError, ValueError):
                 pass
         return NotImplemented
-    
     def __rsub__(self, other):
         date_cls = None
         if isinstance(other, (datetime.date, datetime.datetime)):
@@ -193,6 +190,7 @@ class flexibledate(object):
                 self.get_month(True) or other.month,
                 self.get_day(True) or other.day
             ))
+                
 
     def __eq__(self, other):
         if isinstance(other, flexibledate):
@@ -222,13 +220,13 @@ class flexibledate(object):
                 pass
             try:
                 my_parts = (
-                    self.year, 
+                    self.year,
                     self.get_month(True),
                     self.get_day(True)
                 )
                 other_parts = (other.year, other.month, other.day)
             except AttributeError:
-                _cmperror(self, other)
+                return NotImplemented
             return (my_parts <= other_parts)
 
     def __lt__(self, other):
@@ -241,13 +239,13 @@ class flexibledate(object):
                 pass
             try:
                 my_parts = (
-                    self.year, 
+                    self.year,
                     self.get_month(True),
                     self.get_day(True)
                 )
                 other_parts = (other.year, other.month, other.day)
             except AttributeError:
-                _cmperror(self, other)
+                return NotImplemented
             return (my_parts < other_parts)
 
     def __ge__(self, other):
@@ -260,15 +258,14 @@ class flexibledate(object):
                 pass
             try:
                 my_parts = (
-                    self.year, 
+                    self.year,
                     self.get_month(True),
                     self.get_day(True)
                 )
                 other_parts = (other.year, other.month, other.day)
             except AttributeError:
-                _cmperror(self, other)
+                return NotImplemented
             return (my_parts >= other_parts)
-
     def __gt__(self, other):
         if isinstance(other, flexibledate):
             return self.value > other.value
@@ -279,13 +276,13 @@ class flexibledate(object):
                 pass
             try:
                 my_parts = (
-                    self.year, 
+                    self.year,
                     self.get_month(True),
                     self.get_day(True)
                 )
                 other_parts = (other.year, other.month, other.day)
             except AttributeError:
-                _cmperror(self, other)
+               return NotImplemented
             return (my_parts > other_parts)
 
 
@@ -368,31 +365,31 @@ class flexibledatedelta(object):
         if isinstance(other, flexibledatedelta):
             return self.value <= other.value
         else:
-            _cmperror(self, other)
+            return NotImplemented
 
     def __lt__(self, other):
         if isinstance(other, flexibledatedelta):
             return self.value < other.value
         else:
-            _cmperror(self, other)
+            return NotImplemented
 
     def __ge__(self, other):
         if isinstance(other, flexibledatedelta):
             return self.value >= other.value
         else:
-            _cmperror(self, other)
+            return NotImplemented
 
     def __gt__(self, other):
         if isinstance(other, flexibledatedelta):
             return self.value > other.value
         else:
-            _cmperror(self, other)
+            return NotImplemented
 
     @property
     def value(self):
         return (self.years, self.months, self.days)
 
-    
+
 class flexibledatespan(object):
     def __init__(self, start, end):
         self.start = start
@@ -442,6 +439,3 @@ class flexibledatespan(object):
                 datetime.datetime.strftime(end_date,'%b %Y'),
             )
         return "%s-%s" % ( start_year, end_year)
-        
-
-
