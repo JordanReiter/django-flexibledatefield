@@ -76,6 +76,8 @@ class FlexibleDateFormField(forms.MultiValueField):
 #         super(FlexibleDateFormField, self).__init__(*args, **defaults)
 
     def __init__(self, input_date_formats=None, input_time_formats=None, *args, **kwargs):
+        if 'min_value' in kwargs:
+            del kwargs['min_value']
         errors = self.default_error_messages.copy()
         if 'error_messages' in kwargs:
             errors.update(kwargs['error_messages'])
@@ -165,7 +167,6 @@ class FlexibleDateField(models.PositiveIntegerField):
         return 'IntegerField'
 
     def __init__(self, *args, **kwargs):
-        self.years = kwargs.pop('years',None)
         super(FlexibleDateField, self).__init__(*args, **kwargs)
 
     def to_python(self, value):
@@ -209,4 +210,4 @@ class FlexibleDateField(models.PositiveIntegerField):
     def formfield(self, *args, **kwargs):
         defaults={'form_class': FlexibleDateFormField}
         defaults.update(kwargs)
-        return super(FlexibleDateField, self).formfield(years=self.years, *args, **defaults)
+        return super(FlexibleDateField, self).formfield(*args, **defaults)
