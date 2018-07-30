@@ -78,6 +78,7 @@ class FlexibleDateFormField(forms.MultiValueField):
     def __init__(self, input_date_formats=None, input_time_formats=None, *args, **kwargs):
         if 'min_value' in kwargs:
             del kwargs['min_value']
+        kwargs['require_all_fields'] = False
         errors = self.default_error_messages.copy()
         if 'error_messages' in kwargs:
             errors.update(kwargs['error_messages'])
@@ -118,7 +119,7 @@ class FlexibleDateFormField(forms.MultiValueField):
                     _ = datetime.date(year, month, day)
                 except (ValueError):
                     raise ValidationError(self.error_messages['invalid_day'], code='invalid_day')
-            result = flexibledate('{0:04d}{1:02d}{2:02d}'.format(year, month, day))
+            result = flexibledate('{0:04d}{1:02d}{2:02d}'.format(year, month or 0, day or 0))
             return result
         return None
 
