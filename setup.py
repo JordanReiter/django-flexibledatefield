@@ -11,5 +11,6 @@ setup(name='django-flexibledatefield',
       author='Jordan Reiter',
       author_email='jordanreiter@gmail.com',
       packages=['flexibledatefield'],
+      include_package_data=True,
       install_requires=['Django>=1.11'],
 )

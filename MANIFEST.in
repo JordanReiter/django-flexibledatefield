@@ -1,0 +1,2 @@
+recursive-include flexibledatefield/templates *
+recursive-include flexibledatefield/templatetags *
