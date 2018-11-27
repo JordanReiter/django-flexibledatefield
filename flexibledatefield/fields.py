@@ -45,7 +45,7 @@ class FlexibleDateWidget(forms.Widget):
         else:
             id_ = 'id_%s' % name
 
-        local_attrs = self.build_attrs(base_attrs={'id':self.year_field % id_})
+        local_attrs = self.build_attrs(base_attrs=self.attrs, extra_attrs={'id':self.year_field % id_})
         year_choices = [(i, i) for i in self.years]
         year_choices.reverse()
         if not self.required:
