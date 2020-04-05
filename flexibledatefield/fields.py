@@ -32,7 +32,7 @@ class FlexibleDateWidget(forms.Widget):
             this_year = datetime.date.today().year
             self.years = range(this_year-10, this_year+11)
 
-    def render(self, name, value, attrs=None):
+    def render(self, name, value, attrs=None, renderer=None):
         try:
             year_val, month_val, day_val = value.get_year(), value.get_month(empty_allowed=True), value.get_day(empty_allowed=True)
         except AttributeError:
@@ -51,7 +51,7 @@ class FlexibleDateWidget(forms.Widget):
         if not self.required:
             year_choices = [(0,'(year)')] + year_choices
         s = Select(choices=year_choices)
-        select_html = s.render(self.year_field % name, year_val, local_attrs)
+        select_html = s.render(self.year_field % name, year_val, local_attrs, renderer)
         output.append(select_html)
 
         month_choices = list(MONTHS.items())
@@ -60,7 +60,7 @@ class FlexibleDateWidget(forms.Widget):
         local_attrs['id'] = self.month_field % id_
 
         s = Select(choices=month_choices)
-        select_html = s.render(self.month_field % name, month_val, local_attrs)
+        select_html = s.render(self.month_field % name, month_val, local_attrs, renderer)
         output.append(select_html)
 
 
@@ -69,7 +69,7 @@ class FlexibleDateWidget(forms.Widget):
         local_attrs['id'] = self.day_field % id_
 
         s = Select(choices=day_choices)
-        select_html = s.render(self.day_field % name, day_val, local_attrs)
+        select_html = s.render(self.day_field % name, day_val, local_attrs, renderer)
         output.append(select_html)
 
         return mark_safe(u'\n'.join(output))
