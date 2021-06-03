@@ -45,7 +45,7 @@ class FlexibleDateWidget(forms.Widget):
         else:
             id_ = 'id_%s' % name
 
-        local_attrs = self.build_attrs(id=self.year_field % id_)
+        local_attrs = self.build_attrs(base_attrs=self.attrs, extra_attrs={'id':self.year_field % id_})
         year_choices = [(i, i) for i in self.years]
         year_choices.reverse()
         if not self.required:
@@ -150,7 +150,7 @@ class FlexibleDateDescriptor(object):
 
 class FlexibleDateField(models.PositiveIntegerField):
 
-    def from_db_value(self, value, expression, connection, context):
+    def from_db_value(self, value, expression, connection, context=None):
         if value is None:
             return None
         return flexibledate.parse(value)
